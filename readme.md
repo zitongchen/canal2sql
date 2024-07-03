@@ -33,7 +33,7 @@
 
 ## 可执行jar包下载
 
-最新版本v1.1.3 可在releases页面下载 
+最新版本v1.1.3 可在releases页面下载
 https://github.com/zhuchao941/canal2sql/releases/tag/v1.1.3
 
 ## 运行选项
@@ -51,23 +51,20 @@ https://github.com/zhuchao941/canal2sql/releases/tag/v1.1.3
 **解析范围控制**
 
 - -start_position 起始解析位置。可选。
+
   - 对于在线模式，需要指定起始文件+position，如'mysql-bin.007756|52416008'
   - 对于离线模式，只有position
-
 - -end_position 终止解析位置。可选
+
   - 对于在线模式，需要指定终止文件+position，如'mysql-bin.007756|52416008'
   - 对于离线模式，只有position
-
 - -start_time 起始解析时间，格式'yyyy-MM-dd HH:mm:ss'。可选
-
 - -end_time 终止解析时间，格式'yyyy-MM-dd HH:mm:ss'。可选
 
 **对象过滤**
 
 - -filter 库表维度过滤（白名单），如：a库下所有表a.*，多个规则英文逗号(,)隔开
-
 - -black_filter 库表维度过滤（黑名单），语法和filter一致
-
 - -sql-type 只解析指定类型，支持 insert,update,delete,ddl。多个类型用逗号隔开，如--sql-type=insert,delete。可选。默认为insert,update,delete,ddl
 
 **离线解析模式**
@@ -98,11 +95,12 @@ https://github.com/zhuchao941/canal2sql/releases/tag/v1.1.3
 ## 使用示例
 
 ### 1. 在线模式
+
 ```sh
-java -jar ./canal2sql-${version}.jar -mode online -uroot -proot -P3306 -hlocalhost
+java -jar ./canal2sql-${version}.jar -mode online -uroot -proot -P3306 -hlocalhost -start_position 'binlog.000031|4' -end_time '2024-07-03 09:00:00' -B 
 ```
 
-在线解析模式只需要指定远程数据库连接参数即可，表结构数据直接实时获取
+在线解析模式只需要指定远程数据库连接参数即可，表结构数据直接实时获取。上面的命令指定了 binlog 解析的开始位置和结束时间。
 
 ### 2. binlog文件模式
 
@@ -135,31 +133,53 @@ UPDATE `comment`.`comment_category` SET `upd_tm` = '2023-12-14 16:27:00' WHERE `
 UPDATE `comment`.`comment_category` SET `upd_tm` = '2023-12-14 16:27:00' WHERE `id` = 9;
 ```
 
+## 输出 SQL 到文件
+
+默认情况下 SQL 会输出到控制台，如果需要输出到文件，通过` > rollback.sql`即可。例如：
+
+```sh
+java -jar ./canal2sql-${version}.jar -mode online -uroot -proot -P3306 -hlocalhost -start_position 'binlog.000031|4' -end_time '2024-07-03 09:00:00' -B > rollback.sql
+```
+
+通过 `> rollback.sql` 参数将 SQL 输出到文件 rollback.sql 中。需要注意的是，文件中 SQL 的顺序是按照 binlog 的顺序进行解析输出的，所以如果要进行数据的回滚，需要逆序执行文件中的 SQL。
+
+在 Window 平台的 powershell 可以使用下面命令对 rollback.sql 的内容进行逆序输出到文件中：
+
+```powershell
+Get-Content -Path rollback.log -Encoding UTF8 | Sort-Object -Descending | Set-Content -Path reverse.sql -Encoding UTF8
+```
+在 Linux 平台可以使用下面的命令对 rollback.sql 的内容进行逆序输出到文件中：
+```sh
+tac rollback.log > reverse.log
+```
+
 ## RoadMap
 
 1. ~~支持binlog的在线解析、离线解析~~（已支持）
 2. ~~列还原同时支持在线模式和离线模式~~（已支持）
 3. ~~支持生成回滚SQL~~（已支持）
 4. ~~支持解析范围控制~~（已支持）
-    1. ~~时间维度~~
-    2. ~~position维度~~
+   1. ~~时间维度~~
+   2. ~~position维度~~
 5. ~~支持对象过滤~~（已支持）
-    1. ~~库表维度~~
-    2. ~~sql类型维度~~
+   1. ~~库表维度~~
+   2. ~~sql类型维度~~
 6. 支持多binlog文件顺序解析
 7. ~~支持云rds binlog文件列表解析~~（已支持）
 8. 支持分析统计功能
-    1. 耗时事务统计
-    2. 大事务统计
-    3. 表维度/库维度 更新数据量统计
-    4. qps统计
+   1. 耗时事务统计
+   2. 大事务统计
+   3. 表维度/库维度 更新数据量统计
+   4. qps统计
 
 暂时只剩下一些分析统计相关的功能未实现，后续有时间会考虑实现。
 
 另外对于命令行参数的一些校验也没做，这块后续也可以优化
 
 ## 致谢
-    canal2sql借鉴和学习了很多业界知名的开源项目，在此表示感谢！
+
+canal2sql借鉴和学习了很多业界知名的开源项目，在此表示感谢！
+
 - [canal](https://github.com/alibaba/canal)
 - [bingo2sql](https://github.com/hanchuanchuan/bingo2sql)
 - [binlog2sql](https://github.com/danfengcao/binlog2sql)
